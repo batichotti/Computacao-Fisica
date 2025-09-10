@@ -2,6 +2,8 @@ unsigned long clique = 0;
 
 char last_state_clk;
 char last_state_sw;
+char last_state_dt;
+int led_count = 0;
 
 void setup() {
   DDRC &= ~(1<<PC0);
@@ -23,24 +25,42 @@ void setup() {
 
   last_state_clk = PINC & (1<<PC2);
   last_state_sw  = PINC & (1<<PC0);
+  last_state_dt = PINC & (1<<PC1);
 }
 
 void loop() {
-  // char leitura_clk = PINC & (1<<PC2);
+  char current_clk = PINC & (1<<PC2);
+  char current_dt = PINC & (1<<PC1);
+  
+  if (last_state_clk && !current_clk) {
+    if (current_dt) {
+      if (led_count > 0) {
+        led_count--;
+        uint8_t pattern = 0;
 
-  // if (leitura_clk != last_state_clk && (millis()-clique)>1) {
-  //   clique = millis();
+        for (int i = 0; i < led_count; i++) {
+          pattern |= (1 << i);
+        }
 
-  //   if (!(PINC & (1<<PC1))) {
-  //     PORTD >>= 1;
-  //   } else {
-  //     if (PORTD == 0) PORTD = 0x01;
-  //     else PORTD = (PORTD << 1) | 0x01;
-  //   }
+        PORTD = pattern;
+      }
+    } else {
+      if (led_count < 8) {
+        led_count++;
+        uint8_t pattern = 0;
 
-  //   last_state_clk = leitura_clk;
-  // }
-/////////////////////////////////////////////////////////////////////////////
+        for (int i = 0; i < led_count; i++) {
+          pattern |= (1 << i);
+        }
+        
+        PORTD = pattern;
+      }
+    }
+  }
+  
+  last_state_clk = current_clk;
+  last_state_dt = current_dt;
+
   char leitura_sw = PINC & (1<<PC0);
 
   if (leitura_sw != last_state_sw && (millis()-clique)>1) {
@@ -58,6 +78,3 @@ void loop() {
   }
 
 }
-
-
-Consegui fazer a parte do 'clica e inverte' e 'clica por 900ms e desliga'
