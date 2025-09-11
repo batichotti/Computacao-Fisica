@@ -32,30 +32,27 @@ void loop() {
   char current_clk = PINC & (1<<PC2);
   char current_dt = PINC & (1<<PC1);
   
-  if (last_state_clk && !current_clk) {
-    if (current_dt) {
-      if (led_count > 0) {
-        led_count--;
-        uint8_t pattern = 0;
+  static unsigned long lastClkChangeTime = 0;
+  const unsigned long DEBOUNCE_TIME = 5;
+  const int LED_COUNT = 8;
 
-        for (int i = 0; i < led_count; i++) {
-          pattern |= (1 << i);
+  if (current_clk != last_state_clk && (millis() - lastClkChangeTime) > DEBOUNCE_TIME) {
+    lastClkChangeTime = millis();
+
+    if (current_clk == 0) {
+      if (current_dt != 0) { // Anti-horário
+        if (led_count > 0) {
+          PORTD &= ~(1 << (led_count - 1));
+          led_count--;
         }
-
-        PORTD = pattern;
-      }
-    } else {
-      if (led_count < 8) {
-        led_count++;
-        uint8_t pattern = 0;
-
-        for (int i = 0; i < led_count; i++) {
-          pattern |= (1 << i);
+      } else { // Horário
+        if (led_count < LED_COUNT) {
+          PORTD |= (1 << led_count);
+          led_count++;
         }
-        
-        PORTD = pattern;
       }
     }
+    last_state_clk = current_clk;
   }
   
   last_state_clk = current_clk;
