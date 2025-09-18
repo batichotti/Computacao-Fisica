@@ -100,7 +100,8 @@ void setup() {
 void pisca(int piscada){
   if((millis() - tempo) > piscada){
     PORTC &= ~(0x3C); // limpa dígitos (desliga todos)
-    
+    PORTD &= ~(PORTD);
+
     // Caso em configuração: pisca dígito sendo editado
     if(configMode){
       if(confMin && (alg == 0 || alg == 1) && !blinkState){
