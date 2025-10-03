@@ -94,7 +94,7 @@ void inic_LCD_4bits() // sequência ditada pelo fabricando do circuito integrado
 unsigned char d = 0;
 long long int tempo_hz = 0;
 int conta_hz = 0;
-bool atualiza_display = 0;
+volatile bool atualiza_display = 0;
 unsigned long lastDispRefresh = 0, lastSerialRefresh = 0;
 unsigned char Tabela[] = {0x40, 0x79, 0x24, 0x30, 0x19, 0x12, 0x02, 0x78, 0x80, 0x18, 0x06, 0x2F};
 unsigned char todisp[3] = {10, 11, 11};
@@ -132,6 +132,7 @@ void loop()
 {
     if (atualiza_display)
     {
+      	atualiza_display = 0;
         outputValue[0] = map(sensorValue[0], minSensor[0], maxSensor[0], 0, 100);
         outputValue[1] = map(sensorValue[1], minSensor[1], maxSensor[1], 0, 100);
         aceleracao = (int)(outputValue[0] + outputValue[1]) / 2;
@@ -149,13 +150,6 @@ void loop()
             todisp[2] = (aceleracao <= 100) ? (aceleracao % 10) : (0);
         }
     }
-
-    long long int temp = millis();
-    if (temp >= tempo_hz + 1000)
-    {
-        tempo_hz = temp;
-        conta_hz = 0;
-    }
     delay(1); // Only for simulation
 }
 
@@ -165,6 +159,7 @@ ISR(ADC_vect)
     sensorValue[ch] = ADC;
     ch++;
     ch %= 2;
+  	conta_hz++; // roda 10000 vezes, então pra conseguir rodar 1000 vezes basta mandar um sinal a cada 10 ciclos
 
     ADMUX &= 0b11110000;
     ADMUX |= (0b00001111 & ch); // seleciona o canal ch no MUX
@@ -172,9 +167,10 @@ ISR(ADC_vect)
 
     ADCSRA |= (1 << ADSC); // inicia a conversão
 
-    if (millis() > (lastDispRefresh))
+    if (conta_hz >= 10)
     {
-        lastDispRefresh = millis();
+      	atualiza_display = 1;
+        conta_hz %= 10;
         d++;
         d %= 3;
     }
