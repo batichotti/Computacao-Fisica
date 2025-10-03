@@ -12,16 +12,14 @@
 
 // caracteres personalizados
 unsigned char char_relampago[8] = {
-    0b00010,  //     *  
-    0b00110,  //    **  
-    0b01100,  //   **   
-    0b11111,  //  *****
-    0b11111,  //  *****
-    0b00110,  //    **  
-    0b01100,  //   **   
-    0b01000   //   *    
-};
-
+    0b00010,
+    0b00110,
+    0b01100,
+    0b11111,
+    0b11111,
+    0b00110,
+    0b01100,
+    0b01000};
 
 // sinal de habilitação para o LCD
 #define pulso_enable()     \
@@ -99,17 +97,18 @@ void inic_LCD_4bits() // sequência ditada pelo fabricando do circuito integrado
     cmd_LCD(0x01, 0); // limpa todo o display
     cmd_LCD(0x0F, 0); // mensagem aparente cursor inativo não piscando
     cmd_LCD(0x80, 0); // inicializa cursor na primeira posição a esquerda - 1a linha
-  	cmd_LCD(0x0C, 0); // Desliga o cursor piscar
+    cmd_LCD(0x0C, 0); // Desliga o cursor piscar
 }
 
 void grava_caractere_CGRAM(unsigned char pos, unsigned char *padrao)
 {
     cmd_LCD(0x40 + (pos * 8), 0); // Instrução para gravar na CGRAM
-    
-    for(int i = 0; i < 8; i++) {
+
+    for (int i = 0; i < 8; i++)
+    {
         cmd_LCD(padrao[i], 1); // Envia como dado
     }
-    
+
     cmd_LCD(0x80, 0);
 }
 
@@ -153,24 +152,75 @@ void setup()
     ADCSRA |= (1 << ADIE); // habilita interrupção
     ADCSRA |= (1 << ADEN); // habilita o ADC
     ADCSRA |= (1 << ADSC); // inicia a primeira conversão
-  
-  	inic_LCD_4bits();
-  	grava_caractere_CGRAM(0, char_relampago);
+
+    inic_LCD_4bits();
+    grava_caractere_CGRAM(0, char_relampago);
+    // ADC 0 -
+    cmd_LCD(0x80, 0);
+    cmd_LCD(0x0, 1);
+
+    // voltagem do ADC
+    cmd_LCD(0x82, 0);
+    cmd_LCD(0x31, 1);
+    cmd_LCD(0x32, 1);
+    cmd_LCD(0x33, 1);
+
+    // Barrinha
+    cmd_LCD(0x86, 0);
+    cmd_LCD(0xff, 1);
+    cmd_LCD(0xff, 1);
+    cmd_LCD(0xff, 1);
+    cmd_LCD(0xff, 1);
+    cmd_LCD(0xff, 1);
+
+    // Porcentagem do ADC
+    cmd_LCD(0x8c, 0);
+    cmd_LCD(0x31, 1);
+    cmd_LCD(0x30, 1);
+    cmd_LCD(0x30, 1);
+
+    // Símbolo %
+    cmd_LCD(0x25, 1);
+
+    // ADC 1 -
+    cmd_LCD(0xC0, 0);
+    cmd_LCD(0x0, 1);
+
+    // voltagem do ADC
+    cmd_LCD(0xc2, 0);
+    cmd_LCD(0x31, 1);
+    cmd_LCD(0x32, 1);
+    cmd_LCD(0x33, 1);
+
+    // Barrinha
+    cmd_LCD(0xc6, 0);
+    cmd_LCD(0xff, 1);
+    cmd_LCD(0xff, 1);
+    cmd_LCD(0xff, 1);
+    cmd_LCD(0xff, 1);
+    cmd_LCD(0xff, 1);
+
+    // Porcentagem do ADC
+    cmd_LCD(0xcc, 0);
+    cmd_LCD(0x31, 1);
+    cmd_LCD(0x30, 1);
+    cmd_LCD(0x30, 1);
+
+    // Símbolo %
+    cmd_LCD(0x25, 1);
 }
 
 void loop()
 {
-  	
-  	if (atualiza_LCD){
-      	PORTB = (PORTB & 0b11111000);
-    	atualiza_LCD = 0;
-      	
-      	cmd_LCD(0x80, 0);
-      	cmd_LCD(0x0, 1);
+
+    if (atualiza_LCD)
+    {
+        PORTB = (PORTB & 0b11111000);
+        atualiza_LCD = 0;
     }
     else if (atualiza_display)
     {
-      	atualiza_display = 0;
+        atualiza_display = 0;
         outputValue[0] = map(sensorValue[0], minSensor[0], maxSensor[0], 0, 100);
         outputValue[1] = map(sensorValue[1], minSensor[1], maxSensor[1], 0, 100);
         aceleracao = (int)(outputValue[0] + outputValue[1]) / 2;
@@ -187,12 +237,12 @@ void loop()
             todisp[1] = (aceleracao >= 10 && aceleracao != 100) ? ((int)aceleracao / 10) : (0);
             todisp[2] = (aceleracao <= 100) ? (aceleracao % 10) : (0);
         }
-      
-      	PORTB = (PORTB & 0b11111000) | (1 << d); // ativa o display correspondente ao d
 
-    	PORTD = Tabela[todisp[d]];
+        PORTB = (PORTB & 0b11111000) | (1 << d); // ativa o display correspondente ao d
+
+        PORTD = Tabela[todisp[d]];
     }
-    
+
     delay(1); // Only for simulation
 }
 
@@ -202,7 +252,7 @@ ISR(ADC_vect)
     sensorValue[ch] = ADC;
     ch++;
     ch %= 2;
-  	conta_hz++; // roda 10000 vezes, então pra conseguir rodar 1000 vezes basta mandar um sinal a cada 10 ciclos
+    conta_hz++; // roda 10000 vezes, então pra conseguir rodar 1000 vezes basta mandar um sinal a cada 10 ciclos
 
     ADMUX &= 0b11110000;
     ADMUX |= (0b00001111 & ch); // seleciona o canal ch no MUX
@@ -212,15 +262,15 @@ ISR(ADC_vect)
 
     if (conta_hz >= 10) // Se conta_hz for divisivel por 10
     {
-      	atualiza_display = 1;
+        atualiza_display = 1;
         d++;
         d %= 3;
-   		conta_hz = 0;
-      	conta_10++;
-      	if (conta_10 >= 10)
-       	{
-          	atualiza_LCD = 1;
-          	conta_10 = 0;
+        conta_hz = 0;
+        conta_10++;
+        if (conta_10 >= 10)
+        {
+            atualiza_LCD = 1;
+            conta_10 = 0;
         }
     }
 }
