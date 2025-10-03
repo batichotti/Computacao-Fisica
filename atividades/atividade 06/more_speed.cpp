@@ -99,6 +99,7 @@ void inic_LCD_4bits() // sequência ditada pelo fabricando do circuito integrado
     cmd_LCD(0x01, 0); // limpa todo o display
     cmd_LCD(0x0F, 0); // mensagem aparente cursor inativo não piscando
     cmd_LCD(0x80, 0); // inicializa cursor na primeira posição a esquerda - 1a linha
+  	cmd_LCD(0x0C, 0); // Desliga o cursor piscar
 }
 
 void grava_caractere_CGRAM(unsigned char pos, unsigned char *padrao)
@@ -163,6 +164,8 @@ void loop()
   	if (atualiza_LCD){
       	PORTB = (PORTB & 0b11111000);
     	atualiza_LCD = 0;
+      	
+      	cmd_LCD(0x80, 0);
       	cmd_LCD(0x0, 1);
     }
     else if (atualiza_display)
