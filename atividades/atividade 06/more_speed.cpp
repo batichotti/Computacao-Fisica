@@ -33,54 +33,53 @@ unsigned char char_vazio[8] = {
 
 unsigned char char_1_linha[8] = {
     0b10000,
-	0b10000,
-  	0b10000,
-  	0b10000,
-  	0b10000,
-  	0b10000,
-  	0b10000,
-  	0b10000};
+    0b10000,
+    0b10000,
+    0b10000,
+    0b10000,
+    0b10000,
+    0b10000,
+    0b10000};
 
 unsigned char char_2_linhas[8] = {
     0b11000,
-	0b11000,
-  	0b11000,
-  	0b11000,
-  	0b11000,
-  	0b11000,
-  	0b11000,
-  	0b11000};
+    0b11000,
+    0b11000,
+    0b11000,
+    0b11000,
+    0b11000,
+    0b11000,
+    0b11000};
 
-unsigned char  char_3_linhas[8] = {
+unsigned char char_3_linhas[8] = {
     0b11100,
-	0b11100,
-  	0b11100,
-  	0b11100,
-  	0b11100,
-  	0b11100,
-  	0b11100,
-  	0b11100};
+    0b11100,
+    0b11100,
+    0b11100,
+    0b11100,
+    0b11100,
+    0b11100,
+    0b11100};
 
-
-unsigned char  char_4_linhas[8] = {
+unsigned char char_4_linhas[8] = {
     0b11110,
-	0b11110,
-  	0b11110,
-  	0b11110,
-  	0b11110,
-  	0b11110,
-  	0b11110,
-  	0b11110};
+    0b11110,
+    0b11110,
+    0b11110,
+    0b11110,
+    0b11110,
+    0b11110,
+    0b11110};
 
 unsigned char char_cheio[8] = {
     0b11111,
-	0b11111,
-  	0b11111,
-  	0b11111,
-  	0b11111,
-  	0b11111,
-  	0b11111,
-  	0b11111};
+    0b11111,
+    0b11111,
+    0b11111,
+    0b11111,
+    0b11111,
+    0b11111,
+    0b11111};
 
 // sinal de habilitação para o LCD
 #define pulso_enable()     \
@@ -217,14 +216,13 @@ void setup()
 
     inic_LCD_4bits();
     grava_caractere_CGRAM(0, char_vazio);
-  	grava_caractere_CGRAM(1, char_1_linha);
+    grava_caractere_CGRAM(1, char_1_linha);
     grava_caractere_CGRAM(2, char_2_linhas);
-  	grava_caractere_CGRAM(3, char_3_linhas);
-  	grava_caractere_CGRAM(4, char_4_linhas);
-  	grava_caractere_CGRAM(5, char_cheio);
+    grava_caractere_CGRAM(3, char_3_linhas);
+    grava_caractere_CGRAM(4, char_4_linhas);
+    grava_caractere_CGRAM(5, char_cheio);
     grava_caractere_CGRAM(6, char_relampago);
 
-  
     // ADC 0 -
     cmd_LCD(0x80, 0);
     cmd_LCD(0x06, 1);
@@ -280,33 +278,70 @@ void setup()
     cmd_LCD(0x25, 1);
 }
 
-void atualiza_voltagem(int sensor, char addr){
-	cmd_LCD(addr, 0);
-    cmd_LCD(0x30+((sensor-(sensor%100)))/100, 1);
-    cmd_LCD(0x30+((sensor%100)-(sensor%10))/10, 1);
-    cmd_LCD(0x30+(sensor%10), 1);
+void atualiza_voltagem(int sensor, char addr)
+{
+    cmd_LCD(addr, 0);
+    cmd_LCD(0x30 + ((sensor - (sensor % 100))) / 100, 1);
+    cmd_LCD(0x30 + ((sensor % 100) - (sensor % 10)) / 10, 1);
+    cmd_LCD(0x30 + (sensor % 10), 1);
 }
 
-
-void atualiza_porcentagem(int sensor, char addr){
-	cmd_LCD(addr, 0);
-    (sensor == 100)?(cmd_LCD(0x31, 1)):(cmd_LCD(0x0, 1));
-    cmd_LCD(0x30+((sensor%100)-(sensor%10))/10, 1);
-    cmd_LCD(0x30+(sensor%10), 1);
+void atualiza_porcentagem(int sensor, char addr)
+{
+    cmd_LCD(addr, 0);
+    (sensor == 100) ? (cmd_LCD(0x31, 1)) : (cmd_LCD(0x0, 1));
+    cmd_LCD(0x30 + ((sensor % 100) - (sensor % 10)) / 10, 1);
+    cmd_LCD(0x30 + (sensor % 10), 1);
 }
 
-void atualiza_barrinha(int sensorPorcentagem, char addr){
-	cmd_LCD(addr, 0);
-  	for (int i = 0; i < (int)(sensorPorcentagem/20); i++){
-      cmd_LCD(0x05, 1);
-  	}
-  	for (int i = 0; i < (5 - (int)(sensorPorcentagem/20)); i++){
-      cmd_LCD(0x0, 1);
-  	}
+void atualiza_barrinha(int sensorPorcentagem, char addr)
+{
+    cmd_LCD(addr, 0);
+    for (int i = 0; i < (int)(sensorPorcentagem / 20); i++)
+    {
+        cmd_LCD(0x05, 1);
+    }
+    for (int i = 0; i < (5 - (int)(sensorPorcentagem / 20)); i++)
+    {
+        cmd_LCD(0x0, 1);
+    }
 }
 
-void loop(){
-   	if (atualiza_display)
+void loop()
+{
+
+    if (atualiza_LCD)
+    {
+        PORTB = (PORTB & 0b11111000);
+        atualiza_LCD = 0;
+        atualiza_display = 0;
+
+        // ADC 0
+        if (sensorValue[0] != lastADC[0])
+        {
+            atualiza_voltagem(sensorValue[0], 0x82); // atualiza os números brutos
+
+            atualiza_barrinha(outputValue[0], 0x86); // atualiza a barrinha
+
+            atualiza_porcentagem(outputValue[0], 0x8c); // atualiza a porcentagem
+
+            lastADC[0] = sensorValue[0];
+        }
+
+        // ADC 1
+        if (sensorValue[1] != lastADC[1])
+        {
+            atualiza_voltagem(sensorValue[1], 0xc2); // atualiza os números brutos
+
+            atualiza_barrinha(outputValue[1], 0xc6); // atualiza a barrinha
+
+            atualiza_porcentagem(outputValue[1], 0xcc); // atualiza a porcentagem
+
+            lastADC[1] = sensorValue[1];
+        }
+    }
+
+    if (atualiza_display)
     {
         atualiza_display = 0;
         outputValue[0] = map(sensorValue[0], minSensor[0], maxSensor[0], 0, 100);
@@ -330,35 +365,6 @@ void loop(){
 
         PORTD = Tabela[todisp[d]];
     }
-  
-  	if (atualiza_LCD)
-    {
-        PORTB = (PORTB & 0b11111000);
-        atualiza_LCD = 0;
-      
-      //ADC 0
-      if(sensorValue[0] != lastADC[0]){
-        atualiza_voltagem(sensorValue[0], 0x82); // atualiza os números brutos
-        
-        atualiza_barrinha(outputValue[0], 0x86); // atualiza a barrinha
-        
-        atualiza_porcentagem(outputValue[0], 0x8c); // atualiza a porcentagem
-        
-        lastADC[0] = sensorValue[0];
-      }
-      
-      //ADC 1
-      if(sensorValue[1] != lastADC[1]){
-        atualiza_voltagem(sensorValue[1], 0xc2); // atualiza os números brutos
-      	
-        atualiza_barrinha(outputValue[1], 0xc6); // atualiza a barrinha
-        
-        atualiza_porcentagem(outputValue[1], 0xcc); // atualiza a porcentagem
-        
-        lastADC[1]= sensorValue[1];
-      }
-      
-    }
 
     delay(1); // Only for simulation
 }
@@ -377,7 +383,7 @@ ISR(ADC_vect)
 
     ADCSRA |= (1 << ADSC); // inicia a conversão
 
-    if (conta_hz >= 10) // Se conta_hz for divisivel por 10
+    if (conta_hz >= 10)
     {
         atualiza_display = 1;
         d++;
@@ -385,7 +391,6 @@ ISR(ADC_vect)
         if (conta_10 >= 10)
         {
             atualiza_LCD = 1;
-          	atualiza_display = 0; // para evitar conflito
             conta_10 %= 10;
         }
         conta_hz %= 10;
