@@ -11,16 +11,27 @@
 #define RS PB3          // pino para informar se o dado é uma instrução ou caractere
 
 // caracteres personalizados
-unsigned char char_relampago[8] = {
-    0b00010,
+unsigned char char_relampago1[8] = {
+    0b11100,
+    0b01110,
     0b00110,
     0b01100,
-    0b11111,
-    0b11111,
-    0b00110,
-    0b01100,
-    0b01000};
+    0b11001,
+    0b11011,
+    0b10001,
+    0b01001};
 
+// caracteres personalizados
+unsigned char char_relampago2[8] = {
+    0b11100,
+    0b01110,
+    0b00110,
+    0b01100,
+    0b11011,
+    0b11001,
+    0b10010,
+    0b01011};
+  
 unsigned char char_vazio[8] = {
     0b00000,
     0b00000,
@@ -221,7 +232,8 @@ void setup()
     grava_caractere_CGRAM(3, char_3_linhas);
     grava_caractere_CGRAM(4, char_4_linhas);
     grava_caractere_CGRAM(5, char_cheio);
-    grava_caractere_CGRAM(6, char_relampago);
+    grava_caractere_CGRAM(6, char_relampago1);
+    grava_caractere_CGRAM(7, char_relampago2);
 
     // ADC 0 -
     cmd_LCD(0x80, 0);
@@ -252,7 +264,7 @@ void setup()
 
     // ADC 1 -
     cmd_LCD(0xC0, 0);
-    cmd_LCD(0x06, 1);
+    cmd_LCD(0x07, 1);
 
     // voltagem do ADC
     cmd_LCD(0xc2, 0);
@@ -281,16 +293,19 @@ void setup()
 void atualiza_voltagem(int sensor, char addr)
 {
     cmd_LCD(addr, 0);
-    cmd_LCD(0x30 + ((sensor - (sensor % 100))) / 100, 1);
-    cmd_LCD(0x30 + ((sensor % 100) - (sensor % 10)) / 10, 1);
+    if(sensor >= 100) cmd_LCD(0x30 + ((sensor - (sensor % 100))) / 100, 1);
+  	else cmd_LCD(0x0, 1);
+  	cmd_LCD(0x30 + ((sensor % 100) - (sensor % 10)) / 10, 1);
     cmd_LCD(0x30 + (sensor % 10), 1);
 }
 
 void atualiza_porcentagem(int sensor, char addr)
 {
     cmd_LCD(addr, 0);
-    (sensor == 100) ? (cmd_LCD(0x31, 1)) : (cmd_LCD(0x0, 1));
-    cmd_LCD(0x30 + ((sensor % 100) - (sensor % 10)) / 10, 1);
+	cmd_LCD((0x31*(int)(sensor/100)), 1);
+  	int dezena = ((sensor % 100) - (sensor % 10)) / 10;
+  	if(!dezena && sensor != 100) cmd_LCD(0x0, 1);
+	else cmd_LCD(0x30 + dezena, 1);
     cmd_LCD(0x30 + (sensor % 10), 1);
 }
 
@@ -301,6 +316,9 @@ void atualiza_barrinha(int sensorPorcentagem, char addr)
     {
         cmd_LCD(0x05, 1);
     }
+  
+  	if(sensorPorcentagem > 0 && sensorPorcentagem < 100) cmd_LCD((int)((sensorPorcentagem%20)/5)+1, 1);
+  
     for (int i = 0; i < (5 - (int)(sensorPorcentagem / 20)); i++)
     {
         cmd_LCD(0x0, 1);
@@ -310,6 +328,10 @@ void atualiza_barrinha(int sensorPorcentagem, char addr)
 void loop()
 {
 
+  	outputValue[0] = map(sensorValue[0], minSensor[0], maxSensor[0], 0, 100);
+    outputValue[1] = map(sensorValue[1], minSensor[1], maxSensor[1], 0, 100);
+    aceleracao = ((int)(outputValue[0]+outputValue[1])/2);
+  
     if (atualiza_LCD)
     {
         PORTB = (PORTB & 0b11111000);
@@ -344,9 +366,6 @@ void loop()
     if (atualiza_display)
     {
         atualiza_display = 0;
-        outputValue[0] = map(sensorValue[0], minSensor[0], maxSensor[0], 0, 100);
-        outputValue[1] = map(sensorValue[1], minSensor[1], maxSensor[1], 0, 100);
-        aceleracao = (int)(outputValue[0] + outputValue[1]) / 2;
 
         if (abs(outputValue[0] - outputValue[1]) > 10)
         {
@@ -355,10 +374,10 @@ void loop()
             todisp[2] = 11;
         }
         else
-        {
-            todisp[0] = ((int)aceleracao / 100);
-            todisp[1] = (aceleracao >= 10 && aceleracao != 100) ? ((int)aceleracao / 10) : (0);
-            todisp[2] = (aceleracao <= 100) ? (aceleracao % 10) : (0);
+        { 
+            todisp[0] = ((int)(aceleracao / 100));
+            todisp[1] = (((aceleracao % 100) - (aceleracao % 10)) / 10);
+            todisp[2] = (aceleracao % 10);
         }
 
         PORTB = (PORTB & 0b11111000) | (1 << d); // ativa o display correspondente ao d
